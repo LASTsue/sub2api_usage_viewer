@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# PyInstaller 构建产物
+build/
+dist/
+*.spec
+
+# 运行时配置（可能含 API Key，切勿提交）
+config.json
