@@ -51,7 +51,7 @@ py monitor.py
 3. **左键单击图标**（或右键 →「显示详情」）打开详情窗口；关闭详情窗口只是隐藏到托盘，不会退出。
 4. 右键菜单：**显示详情 / 立即刷新 / 开机自启 / 退出**（退出才是真正关闭程序）。
 5. 勾选「记住 API Key」可把 key 存到本地 `config.json`，下次启动自动连接（默认不存）。
-6. 右键勾选「开机自启」后，登录 Windows 会自动启动本程序（写入注册表 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`，取消勾选即移除）。
+6. 「开机自启」可在主面板或托盘右键菜单里勾选，勾选后登录 Windows 会自动启动本程序（写入注册表 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`，取消勾选即移除）。
 
 ## 详情窗口
 

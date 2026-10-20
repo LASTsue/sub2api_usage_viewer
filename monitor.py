@@ -173,7 +173,7 @@ class DataTable(ctk.CTkFrame):
         head.pack(fill="x", padx=14, pady=(12, 6))
         for key, title, width, align in cols:
             ctk.CTkLabel(head, text=title, width=width, anchor="w",
-                         font=font(12, "bold"), text_color=PAL["muted"]).pack(
+                         font=font(11, "bold"), text_color=PAL["muted"]).pack(
                 side="left", padx=2)
 
         self.body = ctk.CTkScrollableFrame(self, fg_color="transparent", height=height)
@@ -188,7 +188,7 @@ class DataTable(ctk.CTkFrame):
             rowf.pack(fill="x", pady=1)
             for key, title, width, align in self.cols:
                 ctk.CTkLabel(rowf, text=r.get(key, "-"), width=width,
-                             anchor=align, font=font(12),
+                             anchor=align, font=font(11),
                              text_color=PAL["text"]).pack(side="left", padx=2)
 
 
@@ -297,74 +297,89 @@ class TrayApp:
     def _toggle_autostart(self, icon=None, item=None):
         self._set_autostart(not self._is_autostart())
         self.icon.update_menu()
+        # 同步主面板勾选框（切回主线程）
+        self.root.after(0, lambda: self.var_autostart.set(self._is_autostart()))
+
+    def _on_autostart_change(self):
+        self._set_autostart(self.var_autostart.get())
+        self.icon.update_menu()
 
     # ---- UI 构建 ----
     def _build_ui(self):
-        # 顶部栏
+        # 顶部栏（固定，不随内容滚动）
         header = ctk.CTkFrame(self.root, fg_color="transparent")
-        header.pack(fill="x", padx=10, pady=(10, 10))
-        ctk.CTkLabel(header, text="sub2api 用量监控", font=font(19, "bold"),
+        header.pack(fill="x", padx=10, pady=(8, 4))
+        ctk.CTkLabel(header, text="sub2api 用量监控", font=font(15, "bold"),
                      text_color=PAL["text"]).pack(side="left")
-        self.status_dot = ctk.CTkLabel(header, text="●", font=font(14, "bold"),
+        self.status_dot = ctk.CTkLabel(header, text="●", font=font(12, "bold"),
                                        text_color=PAL["muted"])
-        self.status_dot.pack(side="left", padx=(10, 4))
-        self.var_status = ctk.CTkLabel(header, text="未连接", font=font(12),
+        self.status_dot.pack(side="left", padx=(8, 4))
+        self.var_status = ctk.CTkLabel(header, text="未连接", font=font(11),
                                        text_color=PAL["muted"])
         self.var_status.pack(side="left")
 
+        # 全局滚动容器（容纳除顶部栏外的全部内容）
+        self.scroll = ctk.CTkScrollableFrame(self.root, fg_color="transparent")
+        self.scroll.pack(fill="both", expand=True)
+
         # 连接设置
-        settings = ctk.CTkFrame(self.root, fg_color=PAL["card"], corner_radius=12,
+        settings = ctk.CTkFrame(self.scroll, fg_color=PAL["card"], corner_radius=12,
                                 border_width=1, border_color=PAL["border"])
-        settings.pack(fill="x", padx=10, pady=(0, 10))
+        settings.pack(fill="x", padx=10, pady=(4, 8))
         row = ctk.CTkFrame(settings, fg_color="transparent")
-        row.pack(fill="x", padx=14, pady=(14, 6))
+        row.pack(fill="x", padx=12, pady=(10, 4))
         ctk.CTkLabel(row, text="Base URL", font=font(11), text_color=PAL["muted"],
                      width=70).pack(side="left")
         self.var_base = tk.StringVar()
-        ctk.CTkEntry(row, textvariable=self.var_base, height=32,
+        ctk.CTkEntry(row, textvariable=self.var_base, height=30,
                      placeholder_text="https://your-sub2api-gateway",
                      fg_color=PAL["bg"], border_color=PAL["border"],
                      text_color=PAL["text"]).pack(side="left", fill="x", expand=True,
-                                                  padx=(0, 12))
+                                                  padx=(0, 10))
         ctk.CTkLabel(row, text="API Key", font=font(11), text_color=PAL["muted"],
                      width=54).pack(side="left")
         self.var_key = tk.StringVar()
-        ctk.CTkEntry(row, textvariable=self.var_key, height=32, show="●",
+        ctk.CTkEntry(row, textvariable=self.var_key, height=30, show="●",
                      placeholder_text="sk-…", fg_color=PAL["bg"],
                      border_color=PAL["border"], text_color=PAL["text"]).pack(
             side="left", fill="x", expand=True)
 
         row2 = ctk.CTkFrame(settings, fg_color="transparent")
-        row2.pack(fill="x", padx=14, pady=(0, 14))
+        row2.pack(fill="x", padx=12, pady=(0, 10))
         ctk.CTkLabel(row2, text="刷新间隔", font=font(11), text_color=PAL["muted"]).pack(
             side="left")
         self.var_interval = tk.StringVar(value="5")
         ctk.CTkOptionMenu(row2, values=INTERVALS, variable=self.var_interval,
-                          width=80, height=32, fg_color=PAL["card2"],
+                          width=70, height=28, fg_color=PAL["card2"],
                           button_color=PAL["accent"], text_color=PAL["text"],
-                          font=font(12), command=self._on_interval_change).pack(
-            side="left", padx=(8, 16))
+                          font=font(11), command=self._on_interval_change).pack(
+            side="left", padx=(6, 10))
         ctk.CTkLabel(row2, text="秒", font=font(11), text_color=PAL["muted"]).pack(
             side="left")
         self.var_remember = tk.BooleanVar(value=False)
         ctk.CTkCheckBox(row2, text="记住 API Key", variable=self.var_remember,
-                        font=font(12), text_color=PAL["muted"],
-                        fg_color=PAL["accent"]).pack(side="left", padx=(16, 0))
-        self.btn_start = ctk.CTkButton(row2, text="连接并监控", width=110, height=32,
+                        font=font(11), text_color=PAL["muted"],
+                        fg_color=PAL["accent"]).pack(side="left", padx=(12, 0))
+        self.var_autostart = tk.BooleanVar(value=self._is_autostart())
+        ctk.CTkCheckBox(row2, text="开机自启", variable=self.var_autostart,
+                        command=self._on_autostart_change, font=font(11),
+                        text_color=PAL["muted"], fg_color=PAL["accent"]).pack(
+            side="left", padx=(12, 0))
+        self.btn_start = ctk.CTkButton(row2, text="连接并监控", width=100, height=28,
                                        corner_radius=8, fg_color=PAL["accent"],
-                                       hover_color=PAL["accent"], font=font(13, "bold"),
+                                       hover_color=PAL["accent"], font=font(12, "bold"),
                                        command=self._start)
         self.btn_start.pack(side="right")
-        self.btn_stop = ctk.CTkButton(row2, text="停止", width=80, height=32,
+        self.btn_stop = ctk.CTkButton(row2, text="停止", width=70, height=28,
                                       corner_radius=8, fg_color=PAL["card2"],
                                       hover_color=PAL["border"],
-                                      text_color=PAL["text"], font=font(13),
+                                      text_color=PAL["text"], font=font(12),
                                       command=self._stop, state="disabled")
-        self.btn_stop.pack(side="right", padx=(0, 10))
+        self.btn_stop.pack(side="right", padx=(0, 8))
 
         # 概览卡片
-        hero = ctk.CTkFrame(self.root, fg_color="transparent")
-        hero.pack(fill="x", padx=10, pady=(0, 10))
+        hero = ctk.CTkFrame(self.scroll, fg_color="transparent")
+        hero.pack(fill="x", padx=10, pady=(0, 8))
         for c in range(4):
             hero.grid_columnconfigure(c, weight=1, uniform="hero")
         self.hero_remaining = self._hero_card(hero, 0, "剩余额度")
@@ -373,22 +388,22 @@ class TrayApp:
         self.hero_expiry = self._hero_card(hero, 3, "订阅到期")
 
         # 额度进度
-        bars_card = ctk.CTkFrame(self.root, fg_color=PAL["card"], corner_radius=12,
+        bars_card = ctk.CTkFrame(self.scroll, fg_color=PAL["card"], corner_radius=12,
                                  border_width=1, border_color=PAL["border"])
-        bars_card.pack(fill="x", padx=10, pady=(0, 10))
-        ctk.CTkLabel(bars_card, text="剩余额度", font=font(13, "bold"),
-                     text_color=PAL["text"]).pack(anchor="w", padx=14, pady=(12, 2))
+        bars_card.pack(fill="x", padx=10, pady=(0, 8))
+        ctk.CTkLabel(bars_card, text="剩余额度", font=font(12, "bold"),
+                     text_color=PAL["text"]).pack(anchor="w", padx=12, pady=(8, 2))
         self.bars_frame = ctk.CTkFrame(bars_card, fg_color="transparent")
-        self.bars_frame.pack(fill="x", padx=14, pady=(0, 12))
+        self.bars_frame.pack(fill="x", padx=12, pady=(0, 8))
 
         # 用量 KPI
-        kpi = ctk.CTkFrame(self.root, fg_color=PAL["card"], corner_radius=12,
+        kpi = ctk.CTkFrame(self.scroll, fg_color=PAL["card"], corner_radius=12,
                            border_width=1, border_color=PAL["border"])
-        kpi.pack(fill="x", padx=10, pady=(0, 10))
-        ctk.CTkLabel(kpi, text="用量明细（统计口径，可能有延迟）", font=font(13, "bold"),
-                     text_color=PAL["text"]).pack(anchor="w", padx=14, pady=(12, 4))
+        kpi.pack(fill="x", padx=10, pady=(0, 8))
+        ctk.CTkLabel(kpi, text="用量明细（统计口径，可能有延迟）", font=font(12, "bold"),
+                     text_color=PAL["text"]).pack(anchor="w", padx=12, pady=(8, 2))
         grid = ctk.CTkFrame(kpi, fg_color="transparent")
-        grid.pack(fill="x", padx=10, pady=(0, 12))
+        grid.pack(fill="x", padx=8, pady=(0, 8))
         for c in range(4):
             grid.grid_columnconfigure(c, weight=1, uniform="kpi")
         self.kpi = {}
@@ -398,57 +413,57 @@ class TrayApp:
                  ("tpm", "TPM"), ("avg_ms", "平均耗时")]
         for i, (key, label) in enumerate(cards):
             box = ctk.CTkFrame(grid, fg_color=PAL["card2"], corner_radius=10)
-            box.grid(row=i // 4, column=i % 4, padx=4, pady=4, sticky="nsew")
-            ctk.CTkLabel(box, text=label, font=font(11), text_color=PAL["muted"]).pack(
-                pady=(10, 0))
+            box.grid(row=i // 4, column=i % 4, padx=3, pady=3, sticky="nsew")
+            ctk.CTkLabel(box, text=label, font=font(10), text_color=PAL["muted"]).pack(
+                pady=(8, 0))
             var = tk.StringVar(value="-")
-            ctk.CTkLabel(box, textvariable=var, font=font(16, "bold"),
-                         text_color=PAL["text"]).pack(pady=(0, 10))
+            ctk.CTkLabel(box, textvariable=var, font=font(14, "bold"),
+                         text_color=PAL["text"]).pack(pady=(0, 8))
             self.kpi[key] = var
 
         # 分模型 / 每日明细
-        models_card = ctk.CTkFrame(self.root, fg_color="transparent")
-        models_card.pack(fill="x", padx=10, pady=(0, 10))
-        ctk.CTkLabel(models_card, text="按模型拆分", font=font(13, "bold"),
-                     text_color=PAL["text"]).pack(anchor="w", padx=2, pady=(0, 6))
+        models_card = ctk.CTkFrame(self.scroll, fg_color="transparent")
+        models_card.pack(fill="x", padx=10, pady=(0, 8))
+        ctk.CTkLabel(models_card, text="按模型拆分", font=font(12, "bold"),
+                     text_color=PAL["text"]).pack(anchor="w", padx=2, pady=(0, 4))
         self.table_model = DataTable(models_card, [
             ("model", "模型", 210, "w"), ("requests", "请求", 65, "e"),
             ("input_tokens", "输入", 90, "e"), ("output_tokens", "输出", 90, "e"),
             ("total_tokens", "总 Token", 95, "e"),
-            ("actual_cost", "费用", 80, "e")], height=120)
+            ("actual_cost", "费用", 80, "e")], height=110)
         self.table_model.pack(fill="x")
 
-        daily_card = ctk.CTkFrame(self.root, fg_color="transparent")
-        daily_card.pack(fill="both", expand=True, padx=10, pady=(0, 10))
-        ctk.CTkLabel(daily_card, text="每日明细", font=font(13, "bold"),
-                     text_color=PAL["text"]).pack(anchor="w", padx=2, pady=(0, 6))
+        daily_card = ctk.CTkFrame(self.scroll, fg_color="transparent")
+        daily_card.pack(fill="x", padx=10, pady=(0, 8))
+        ctk.CTkLabel(daily_card, text="每日明细", font=font(12, "bold"),
+                     text_color=PAL["text"]).pack(anchor="w", padx=2, pady=(0, 4))
         self.table_daily = DataTable(daily_card, [
             ("date", "日期", 100, "w"), ("requests", "请求", 70, "e"),
             ("total_tokens", "总 Token", 100, "e"), ("input_tokens", "输入", 80, "e"),
             ("output_tokens", "输出", 80, "e"), ("actual_cost", "费用", 80, "e")],
-            height=130)
-        self.table_daily.pack(fill="both", expand=True)
+            height=120)
+        self.table_daily.pack(fill="x")
 
         # 底部状态栏
-        footer = ctk.CTkFrame(self.root, fg_color="transparent")
-        footer.pack(fill="x", padx=12, pady=(0, 8))
-        self.var_last = ctk.CTkLabel(footer, text="—", font=font(11),
+        footer = ctk.CTkFrame(self.scroll, fg_color="transparent")
+        footer.pack(fill="x", padx=12, pady=(0, 6))
+        self.var_last = ctk.CTkLabel(footer, text="—", font=font(10),
                                      text_color=PAL["muted"])
         self.var_last.pack(side="left")
-        ctk.CTkLabel(footer, text="关闭窗口会隐藏到托盘", font=font(11),
+        ctk.CTkLabel(footer, text="关闭窗口会隐藏到托盘", font=font(10),
                      text_color=PAL["muted"]).pack(side="right")
 
     def _hero_card(self, parent, col, title):
         card = ctk.CTkFrame(parent, fg_color=PAL["card"], corner_radius=12,
                             border_width=1, border_color=PAL["border"])
-        card.grid(row=0, column=col, padx=4, sticky="nsew")
-        ctk.CTkLabel(card, text=title, font=font(12), text_color=PAL["muted"]).pack(
-            anchor="w", padx=16, pady=(14, 2))
-        v = ctk.CTkLabel(card, text="-", font=font(22, "bold"),
+        card.grid(row=0, column=col, padx=3, sticky="nsew")
+        ctk.CTkLabel(card, text=title, font=font(11), text_color=PAL["muted"]).pack(
+            anchor="w", padx=12, pady=(10, 2))
+        v = ctk.CTkLabel(card, text="-", font=font(17, "bold"),
                          text_color=PAL["accent"])
-        v.pack(anchor="w", padx=16)
-        s = ctk.CTkLabel(card, text="-", font=font(11), text_color=PAL["muted"])
-        s.pack(anchor="w", padx=16, pady=(2, 14))
+        v.pack(anchor="w", padx=12)
+        s = ctk.CTkLabel(card, text="-", font=font(10), text_color=PAL["muted"])
+        s.pack(anchor="w", padx=12, pady=(2, 10))
         return (v, s)
 
     def _restore_fields(self):
@@ -688,7 +703,7 @@ class TrayApp:
         for w in self.bars_frame.winfo_children():
             w.destroy()
         if not bars:
-            ctk.CTkLabel(self.bars_frame, text="（无额度限制）", font=font(12),
+            ctk.CTkLabel(self.bars_frame, text="（无额度限制）", font=font(11),
                          text_color=PAL["muted"]).pack(anchor="w")
             return
         for label, used, limit in bars:
@@ -696,7 +711,7 @@ class TrayApp:
             r = rem / limit if limit > 0 else 0
             row = ctk.CTkFrame(self.bars_frame, fg_color="transparent")
             row.pack(fill="x", pady=3)
-            ctk.CTkLabel(row, text=label, width=64, anchor="w", font=font(12),
+            ctk.CTkLabel(row, text=label, width=64, anchor="w", font=font(11),
                          text_color=PAL["muted"]).pack(side="left")
             bar = ctk.CTkProgressBar(row, height=8, corner_radius=4,
                                      fg_color=PAL["track"],
@@ -704,10 +719,10 @@ class TrayApp:
             bar.pack(side="left", fill="x", expand=True, padx=8)
             bar.set(min(r, 1.0))
             ctk.CTkLabel(row, text=f"剩 {fmt_cost(rem)} / {fmt_cost(limit)}", width=180,
-                         anchor="e", font=font(12), text_color=PAL["text"]).pack(
+                         anchor="e", font=font(11), text_color=PAL["text"]).pack(
                 side="left")
             ctk.CTkLabel(row, text=f"{r * 100:.0f}%", width=44, anchor="e",
-                         font=font(12, "bold"),
+                         font=font(11, "bold"),
                          text_color=ratio_color(r)).pack(side="left")
 
     # ---- 启动 ----
