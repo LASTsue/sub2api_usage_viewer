@@ -24,6 +24,7 @@ import sys
 import threading
 import time
 import tkinter as tk
+import winreg
 from tkinter import messagebox
 
 import customtkinter as ctk
@@ -40,6 +41,10 @@ else:
 CONFIG_FILE = os.path.join(APP_DIR, "config.json")
 
 INTERVALS = ["1", "3", "5", "10", "15", "30", "60"]
+
+# 开机自启（注册表 HKCU Run 键）
+RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+RUN_VALUE_NAME = "sub2api-monitor"
 
 # 托盘图标颜色（按当日剩余额度占比）
 GREEN = "#3fb950"
@@ -223,6 +228,8 @@ class TrayApp:
             pystray.Menu(
                 pystray.MenuItem("显示详情", self._toggle_window, default=True),
                 pystray.MenuItem("立即刷新", self._refresh_now),
+                pystray.MenuItem("开机自启", self._toggle_autostart,
+                                 checked=lambda item: self._is_autostart()),
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem("退出", self._quit),
             ),
@@ -254,6 +261,42 @@ class TrayApp:
                 json.dump(self.cfg, f, ensure_ascii=False, indent=2)
         except OSError:
             pass
+
+    # ---- 开机自启 ----
+    def _autostart_command(self):
+        """返回写入 Run 键的启动命令（exe 或 pythonw + 脚本路径）。"""
+        if getattr(sys, "frozen", False):
+            return f'"{sys.executable}"'
+        # 源码运行：用 pythonw 后台启动，避免弹出控制台窗口
+        pyw = os.path.splitext(sys.executable)[0] + "w.exe"
+        if not os.path.exists(pyw):
+            pyw = sys.executable
+        return f'"{pyw}" "{os.path.abspath(__file__)}"'
+
+    def _is_autostart(self):
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as k:
+                val, _ = winreg.QueryValueEx(k, RUN_VALUE_NAME)
+                return val == self._autostart_command()
+        except OSError:
+            return False
+
+    def _set_autostart(self, enabled):
+        if enabled:
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as k:
+                winreg.SetValueEx(k, RUN_VALUE_NAME, 0, winreg.REG_SZ,
+                                  self._autostart_command())
+        else:
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0,
+                                    winreg.KEY_SET_VALUE) as k:
+                    winreg.DeleteValue(k, RUN_VALUE_NAME)
+            except FileNotFoundError:
+                pass
+
+    def _toggle_autostart(self, icon=None, item=None):
+        self._set_autostart(not self._is_autostart())
+        self.icon.update_menu()
 
     # ---- UI 构建 ----
     def _build_ui(self):
